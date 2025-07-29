@@ -297,7 +297,7 @@
             } else if (isAndroid()) {
                 // Android device - show Google Play button
                 buttonsHTML = `
-                    <a href="https://play.google.com/store/apps/details?id=com.carri.app" target="_blank" class="store-button">
+                    <a href="intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end" target="_blank" class="store-button">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
                     </a>
                 `;
@@ -314,7 +314,7 @@
             } else {
                 // Desktop or unknown - show both buttons
                 buttonsHTML = `
-                    <a href="https://play.google.com/store/apps/details?id=com.carri.app" target="_blank" class="store-button">
+                    <a href="intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end" target="_blank" class="store-button">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
                     </a>
                     <a href="https://apps.apple.com/app/carri/id6738027288" target="_blank" class="store-button">
@@ -357,7 +357,7 @@
                             
                             // If Google Play app fails, fallback to web after another delay
                             setTimeout(() => {
-                                window.open('https://play.google.com/store/apps/details?id=com.carri.app', '_blank');
+                                window.open('intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end', '_blank');
                             }, 1000);
                         } else {
                             // iOS - open App Store
@@ -369,7 +369,7 @@
                 // Desktop: Show message and direct to appropriate store
                 alert(`Please open this link on your mobile device or download Carri from the ${storeName}.`);
                 if (isAndroid()) {
-                    window.open('https://play.google.com/store/apps/details?id=com.carri.app', '_blank');
+                    window.open('intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end', '_blank');
                 } else {
                     window.open(fallbackUrl, '_blank');
                 }

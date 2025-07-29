@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.carri.app",
+      "sha256_cert_fingerprints":
+        ["2A:28:A0:32:15:59:FF:E9:A9:35:59:4F:21:D6:B7:1C:F1:2C:89:4C:ED:18:67:CF:17:95:F1:CB:16:9C:A1:E8"]
+    }
+  }
+] 
