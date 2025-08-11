@@ -187,6 +187,28 @@
             font-weight: 500;
         }
         
+        .invitation-message {
+            background: linear-gradient(135deg, rgba(240, 147, 251, 0.1), rgba(245, 87, 108, 0.1));
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+            border: 1px solid rgba(240, 147, 251, 0.2);
+        }
+
+        .inviter-info {
+            font-size: 1.2em;
+            color: #2D3748;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+        
+        .inviter-info span {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
         @media (max-width: 480px) {
             .container {
                 padding: 32px 24px;
@@ -216,6 +238,12 @@
         </div>
         <h1>Join Family on Carri</h1>
         <p class="subtitle">You've been invited to join a family group! ✨</p>
+        
+        <div id="invitationMessage" class="invitation-message" style="display: none;">
+            <div class="inviter-info">
+                <span id="inviterName"></span> has invited you to join the <span id="familyName"></span> family
+            </div>
+        </div>
         
         <div id="loading" class="loading">
             Loading invitation...
@@ -389,6 +417,9 @@
             const loadingEl = document.getElementById('loading');
             const contentEl = document.getElementById('content');
             const openAppBtn = document.getElementById('openAppButton');
+            const invitationMessageEl = document.getElementById('invitationMessage');
+            const inviterNameEl = document.getElementById('inviterName');
+            const familyNameEl = document.getElementById('familyName');
             
             // Setup store buttons based on device
             setupStoreButtons();
@@ -396,6 +427,20 @@
             if (inviteId) {
                 loadingEl.style.display = 'none';
                 contentEl.style.display = 'block';
+
+                // Get inviter name and family name from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const inviterName = urlParams.get('inviter');
+                const familyName = urlParams.get('family');
+                
+                if (inviterName && familyName) {
+                    inviterNameEl.textContent = inviterName;
+                    familyNameEl.textContent = familyName;
+                    invitationMessageEl.style.display = 'block';
+                } else {
+                    // Hide invitation message if parameters are missing
+                    invitationMessageEl.style.display = 'none';
+                }
                 
                 // Set up the open app button
                 openAppBtn.addEventListener('click', function(e) {
