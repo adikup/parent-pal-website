@@ -30,10 +30,4 @@
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
-  <url>
-    <loc>https://parent-pal-website.vercel.app/son_schedule.html</loc>
-    <lastmod>2024-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
 </urlset>
