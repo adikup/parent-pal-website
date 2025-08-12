@@ -252,7 +252,7 @@
         
         <div id="content" style="display: none;">
             <a href="#" id="openAppButton" class="app-button">
-                📱 Get App Instructions
+                🚀 Open Carri App
             </a>
             
             <div class="features">
@@ -358,21 +358,63 @@
             storeButtonsContainer.innerHTML = buttonsHTML;
         }
 
-        // Show app information instead of trying to open it
-        function showAppInfo(inviteId) {
+        // Try to open the app with deep link
+        function openApp(inviteId) {
             const deepLink = `exp+carri://invite/${inviteId}`;
+            let fallbackUrl, storeName;
+
+            // Set appropriate store based on device
+            if (isIOS() || isMacOS()) {
+                fallbackUrl = 'https://apps.apple.com/app/carri/id6738027288';
+                storeName = 'App Store';
+            } else {
+                // Android - use market:// URL to force Google Play app
+                fallbackUrl = 'market://details?id=com.carri.app';
+                storeName = 'Play Store';
+            }
             
-            // Create a simple info message
-            const message = `
-                🚀 To join the family, you'll need to:
+            if (isMobile()) {
+                // Try to open the app
+                window.location.href = deepLink;
                 
-                1. Download the Carri app from your device's app store
-                2. Open the app and use this invitation code: ${inviteId}
-                
-                📱 The app will automatically detect your device and show the right download option.
-            `;
-            
-            alert(message);
+                // Fallback to store after a delay if app doesn't open
+                setTimeout(() => {
+                    if (confirm(`Carri app not found. Would you like to download it from the ${storeName}?`)) {
+                        if (isAndroid()) {
+                            // Try to open Google Play app first
+                            window.location.href = fallbackUrl;
+                            
+                            // If Google Play app fails, fallback to web after another delay
+                            setTimeout(() => {
+                                const link = document.createElement('a');
+                                link.href = 'https://play.google.com/store/apps/details?id=com.carri.app';
+                                link.target = '_blank';
+                                link.click();
+                            }, 1000);
+                        } else {
+                            // iOS - open App Store
+                            const link = document.createElement('a');
+                            link.href = fallbackUrl;
+                            link.target = '_blank';
+                            link.click();
+                        }
+                    }
+                }, 2000);
+            } else {
+                // Desktop: Show message and direct to appropriate store
+                alert(`Please open this link on your mobile device or download Carri from the ${storeName}.`);
+                if (isAndroid()) {
+                    const link = document.createElement('a');
+                    link.href = 'https://play.google.com/store/apps/details?id=com.carri.app';
+                    link.target = '_blank';
+                    link.click();
+                } else {
+                    const link = document.createElement('a');
+                    link.href = fallbackUrl;
+                    link.target = '_blank';
+                    link.click();
+                }
+            }
         }
 
         // Initialize the page
@@ -409,8 +451,15 @@
                 // Set up the open app button
                 openAppBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    showAppInfo(inviteId);
+                    openApp(inviteId);
                 });
+                
+                // Auto-try to open app on mobile after 1 second
+                if (isMobile()) {
+                    setTimeout(() => {
+                        openApp(inviteId);
+                    }, 1000);
+                }
             } else {
                 loadingEl.innerHTML = 'Invalid invitation link. Please check the link and try again.';
             }
