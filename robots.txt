@@ -4,6 +4,11 @@ Allow: /
 # Sitemap
 Sitemap: https://parent-pal-website.vercel.app/sitemap.xml
 
-# Disallow duplicate content
+# Disallow URL parameters that might create duplicate content
 Disallow: /*?*
 Disallow: /*&*
+
+# Allow specific parameters for invites
+Allow: /carri-invite.html?id=*
+Allow: /carri-invite.html?inviter=*
+Allow: /carri-invite.html?family=*

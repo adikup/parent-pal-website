@@ -252,7 +252,7 @@
         
         <div id="content" style="display: none;">
             <a href="#" id="openAppButton" class="app-button">
-                🚀 Open Carri App
+                📱 Get App Instructions
             </a>
             
             <div class="features">
@@ -321,36 +321,29 @@
             let buttonsHTML = '';
 
             if (isIOS()) {
-                // iOS device - show App Store button (when available)
+                // iOS device - show App Store button
                 buttonsHTML = `
                     <a href="https://apps.apple.com/app/carri/id6738027288" target="_blank" class="store-button">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on the App Store">
                     </a>
                     <p style="color: #718096; font-size: 0.9em; margin-top: 12px;">
-                        📱 iOS version coming soon! For now, use the web version or try on Android.
+                        📱 Download Carri from the App Store
                     </p>
                 `;
             } else if (isAndroid()) {
                 // Android device - show Google Play button
                 buttonsHTML = `
-                    <a href="intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end" target="_blank" class="store-button">
+                    <a href="https://play.google.com/store/apps/details?id=com.carri.app" target="_blank" class="store-button">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
                     </a>
-                `;
-            } else if (isMacOS()) {
-                // macOS - show App Store button
-                buttonsHTML = `
-                    <a href="https://apps.apple.com/app/carri/id6738027288" target="_blank" class="store-button">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on the App Store">
-                    </a>
                     <p style="color: #718096; font-size: 0.9em; margin-top: 12px;">
-                        💻 For the best experience, use Carri on your mobile device.
+                        📱 Download Carri from Google Play
                     </p>
                 `;
             } else {
                 // Desktop or unknown - show both buttons
                 buttonsHTML = `
-                    <a href="intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end" target="_blank" class="store-button">
+                    <a href="https://play.google.com/store/apps/details?id=com.carri.app" target="_blank" class="store-button">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
                     </a>
                     <a href="https://apps.apple.com/app/carri/id6738027288" target="_blank" class="store-button">
@@ -365,63 +358,21 @@
             storeButtonsContainer.innerHTML = buttonsHTML;
         }
 
-        // Try to open the app with deep link
-        function openApp(inviteId) {
+        // Show app information instead of trying to open it
+        function showAppInfo(inviteId) {
             const deepLink = `exp+carri://invite/${inviteId}`;
-            let fallbackUrl, storeName;
-
-            // Set appropriate store based on device
-            if (isIOS() || isMacOS()) {
-                fallbackUrl = 'https://apps.apple.com/app/carri/id6738027288';
-                storeName = 'App Store';
-            } else {
-                // Android - use market:// URL to force Google Play app
-                fallbackUrl = 'market://details?id=com.carri.app';
-                storeName = 'Play Store';
-            }
             
-            if (isMobile()) {
-                // Try to open the app
-                window.location.href = deepLink;
+            // Create a simple info message
+            const message = `
+                🚀 To join the family, you'll need to:
                 
-                // Fallback to store after a delay if app doesn't open
-                setTimeout(() => {
-                    if (confirm(`Carri app not found. Would you like to download it from the ${storeName}?`)) {
-                        if (isAndroid()) {
-                            // Try to open Google Play app first
-                            window.location.href = fallbackUrl;
-                            
-                            // If Google Play app fails, fallback to web after another delay
-                            setTimeout(() => {
-                                const link = document.createElement('a');
-                                link.href = 'intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end';
-                                link.target = '_blank';
-                                link.click();
-                            }, 1000);
-                        } else {
-                            // iOS - open App Store
-                            const link = document.createElement('a');
-                            link.href = fallbackUrl;
-                            link.target = '_blank';
-                            link.click();
-                        }
-                    }
-                }, 2000);
-            } else {
-                // Desktop: Show message and direct to appropriate store
-                alert(`Please open this link on your mobile device or download Carri from the ${storeName}.`);
-                if (isAndroid()) {
-                    const link = document.createElement('a');
-                    link.href = 'intent://play.google.com/store/apps/details?id=com.carri.app#Intent;scheme=https;package=com.android.vending;end';
-                    link.target = '_blank';
-                    link.click();
-                } else {
-                    const link = document.createElement('a');
-                    link.href = fallbackUrl;
-                    link.target = '_blank';
-                    link.click();
-                }
-            }
+                1. Download the Carri app from your device's app store
+                2. Open the app and use this invitation code: ${inviteId}
+                
+                📱 The app will automatically detect your device and show the right download option.
+            `;
+            
+            alert(message);
         }
 
         // Initialize the page
@@ -458,15 +409,8 @@
                 // Set up the open app button
                 openAppBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    openApp(inviteId);
+                    showAppInfo(inviteId);
                 });
-                
-                // Auto-try to open app on mobile after 1 second
-                if (isMobile()) {
-                    setTimeout(() => {
-                        openApp(inviteId);
-                    }, 1000);
-                }
             } else {
                 loadingEl.innerHTML = 'Invalid invitation link. Please check the link and try again.';
             }
