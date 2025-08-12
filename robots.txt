@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://parent-pal-website.vercel.app/sitemap.xml
+
+# Disallow duplicate content
+Disallow: /*?*
+Disallow: /*&*
