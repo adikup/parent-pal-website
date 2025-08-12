@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://parent-pal-website.vercel.app/sitemap.xml
+Sitemap: https://carri-website.vercel.app/sitemap.xml
 
 # Disallow URL parameters that might create duplicate content
 Disallow: /*?*
