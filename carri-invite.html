@@ -312,14 +312,6 @@
                 🚀 Open Carri App
             </a>
             
-            <!-- Debug section - remove in production -->
-            <div id="debugSection" style="display: none; margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 0.9em;">
-                <h4>Debug Info:</h4>
-                <div id="debugInfo"></div>
-                <button onclick="testDeepLinks()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    Test Deep Links
-                </button>
-            </div>
             
             <div id="appMessage" class="app-message" style="display: none;">
                 <!-- App instructions will be displayed here -->
@@ -416,13 +408,8 @@
             if (inviteData.family) params.set('family', inviteData.family);
             if (inviteData.source) params.set('source', inviteData.source);
             
-            // Try different deep link schemes - adjust these to match your app's actual scheme
-            const deepLinkSchemes = [
-                `carri://invite?${params.toString()}`,
-                `exp+carri://invite?${params.toString()}`,
-                `carri://invite/${inviteData.id}?${params.toString()}`,
-                `exp+carri://invite/${inviteData.id}?${params.toString()}`
-            ];
+            // Use the correct deep link scheme: carri://invite/{invitationId}
+            const deepLink = `carri://invite/${inviteData.id}`;
             
             const iosStoreUrl = 'https://apps.apple.com/app/carri/id6738027288';
             const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.carri.app';
@@ -464,42 +451,23 @@
                 window.addEventListener('blur', onBlur);
 
                 // Try to open the app using iframe method (more reliable)
-                const tryDeepLink = (scheme) => {
-                    return new Promise((resolve) => {
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = scheme;
-                        document.body.appendChild(iframe);
-                        
-                        // Clean up iframe after a short delay
-                        setTimeout(() => {
-                            if (document.body.contains(iframe)) {
-                                document.body.removeChild(iframe);
-                            }
-                            resolve();
-                        }, 100);
-                    });
-                };
-
-                // Try each deep link scheme
-                const tryAllSchemes = async () => {
-                    for (const scheme of deepLinkSchemes) {
-                        console.log('Trying deep link:', scheme);
-                        await tryDeepLink(scheme);
-                        
-                        // Small delay between attempts
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                        
-                        // If app opened, stop trying
-                        if (appOpened) {
-                            console.log('App opened successfully');
-                            break;
+                const tryDeepLink = () => {
+                    console.log('Trying deep link:', deepLink);
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = deepLink;
+                    document.body.appendChild(iframe);
+                    
+                    // Clean up iframe after a short delay
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
                         }
-                    }
+                    }, 100);
                 };
 
-                // Start trying to open the app
-                tryAllSchemes();
+                // Try to open the app
+                tryDeepLink();
 
                 // Fallback to store after longer timeout
                 const fallbackTimeoutMs = 3000; // Increased to 3 seconds
@@ -529,32 +497,6 @@
             }
         }
 
-        // Debug function to test deep links
-        function testDeepLinks() {
-            const inviteData = getInvitationData();
-            const params = new URLSearchParams();
-            if (inviteData.id) params.set('id', inviteData.id);
-            if (inviteData.inviter) params.set('inviter', inviteData.inviter);
-            if (inviteData.family) params.set('family', inviteData.family);
-            if (inviteData.source) params.set('source', inviteData.source);
-            
-            const deepLinkSchemes = [
-                `carri://invite?${params.toString()}`,
-                `exp+carri://invite?${params.toString()}`,
-                `carri://invite/${inviteData.id}?${params.toString()}`,
-                `exp+carri://invite/${inviteData.id}?${params.toString()}`
-            ];
-            
-            const debugInfo = document.getElementById('debugInfo');
-            debugInfo.innerHTML = `
-                <p><strong>Invite Data:</strong> ${JSON.stringify(inviteData, null, 2)}</p>
-                <p><strong>Deep Link Schemes to try:</strong></p>
-                <ul>
-                    ${deepLinkSchemes.map(scheme => `<li><a href="${scheme}" target="_blank">${scheme}</a></li>`).join('')}
-                </ul>
-                <p><strong>Instructions:</strong> Click each link above to test which one opens your app. The working one should open your TestFlight app.</p>
-            `;
-        }
 
         // Initialize the page
         window.addEventListener('load', function() {
@@ -588,11 +530,6 @@
                 loadingEl.style.display = 'none';
                 contentEl.style.display = 'block';
 
-                // Show debug section for testing
-                const debugSection = document.getElementById('debugSection');
-                if (debugSection) {
-                    debugSection.style.display = 'block';
-                }
 
                 // Display invitation message if we have inviter and family data
                 if (inviteData.inviter && inviteData.family) {
