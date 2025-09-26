@@ -425,7 +425,7 @@
                 if (messageDiv) {
                     messageDiv.innerHTML = `
                         🚀 Attempting to open Carri app...<br><br>
-                        If the app doesn't open, you'll be redirected to the store.<br>
+                        If you have the app installed (including TestFlight), it should open automatically.<br>
                         Your invitation will be saved for when you return.
                     `;
                     messageDiv.style.display = 'block';
@@ -469,14 +469,23 @@
                 // Try to open the app
                 tryDeepLink();
 
-                // Fallback to store after longer timeout
+                // Fallback after longer timeout
                 const fallbackTimeoutMs = 3000; // Increased to 3 seconds
                 setTimeout(() => {
                     if (!appOpened && !fallbackTriggered) {
                         fallbackTriggered = true;
-                        console.log('App did not open, redirecting to store');
-                        if (storeUrl) {
-                            window.location.href = storeUrl;
+                        console.log('App did not open, showing fallback message');
+                        
+                        // Show TestFlight message instead of redirecting to store
+                        if (messageDiv) {
+                            messageDiv.innerHTML = `
+                                📱 <strong>App not found?</strong><br><br>
+                                If you have Carri installed via TestFlight, make sure:<br>
+                                • The app is installed and up to date<br>
+                                • You're signed in to TestFlight<br><br>
+                                <em>Your invitation has been saved and will be available when you open the app.</em>
+                            `;
+                            messageDiv.style.display = 'block';
                         }
                     }
                 }, fallbackTimeoutMs);
