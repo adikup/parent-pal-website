@@ -450,20 +450,29 @@
                 };
                 window.addEventListener('blur', onBlur);
 
-                // Try to open the app using iframe method (more reliable)
+                // Try multiple methods to open the app (TestFlight compatibility)
                 const tryDeepLink = () => {
                     console.log('Trying deep link:', deepLink);
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.src = deepLink;
-                    document.body.appendChild(iframe);
                     
-                    // Clean up iframe after a short delay
-                    setTimeout(() => {
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
-                        }
-                    }, 100);
+                    // Method 1: Try direct window.location (works better with TestFlight)
+                    try {
+                        window.location.href = deepLink;
+                    } catch (e) {
+                        console.log('Direct location failed, trying iframe method');
+                        
+                        // Method 2: Fallback to iframe method
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = deepLink;
+                        document.body.appendChild(iframe);
+                        
+                        // Clean up iframe after a short delay
+                        setTimeout(() => {
+                            if (document.body.contains(iframe)) {
+                                document.body.removeChild(iframe);
+                            }
+                        }, 100);
+                    }
                 };
 
                 // Try to open the app
@@ -480,7 +489,10 @@
                         if (messageDiv) {
                             messageDiv.innerHTML = `
                                 📱 <strong>App not found?</strong><br><br>
-                                If you have Carri installed via TestFlight, make sure:<br>
+                                If you have Carri installed via TestFlight, try:<br>
+                                • Copy this link: <code>${deepLink}</code><br>
+                                • Paste it in Safari and press Go<br><br>
+                                Or make sure:<br>
                                 • The app is installed and up to date<br>
                                 • You're signed in to TestFlight<br><br>
                                 <em>Your invitation has been saved and will be available when you open the app.</em>
