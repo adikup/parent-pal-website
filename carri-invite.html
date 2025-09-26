@@ -408,8 +408,8 @@
             if (inviteData.family) params.set('family', inviteData.family);
             if (inviteData.source) params.set('source', inviteData.source);
             
-            // Use the correct deep link scheme: carri://invite/{invitationId}
-            const deepLink = `carri://invite/${inviteData.id}`;
+            // Use the correct deep link scheme: exp+carri://invite/{invitationId}
+            const deepLink = `exp+carri://invite/${inviteData.id}`;
             
             const iosStoreUrl = 'https://apps.apple.com/app/carri/id6738027288';
             const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.carri.app';
