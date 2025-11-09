@@ -425,7 +425,7 @@
                 if (messageDiv) {
                     messageDiv.innerHTML = `
                         🚀 Attempting to open Carri app...<br><br>
-                        If you have the app installed (including TestFlight), it should open automatically.<br>
+                        If you have the app installed, it should open automatically.<br>
                         Your invitation will be saved for when you return.
                     `;
                     messageDiv.style.display = 'block';
@@ -450,11 +450,11 @@
                 };
                 window.addEventListener('blur', onBlur);
 
-                // Try multiple methods to open the app (TestFlight compatibility)
+                // Try multiple methods to open the app
                 const tryDeepLink = () => {
                     console.log('Trying deep link:', deepLink);
                     
-                    // Method 1: Try direct window.location (works better with TestFlight)
+                    // Method 1: Try direct window.location
                     try {
                         window.location.href = deepLink;
                     } catch (e) {
@@ -485,18 +485,24 @@
                         fallbackTriggered = true;
                         console.log('App did not open, showing fallback message');
                         
-                        // Show TestFlight message instead of redirecting to store
+                        // Show download/help message instead of TestFlight guidance
                         if (messageDiv) {
-                            messageDiv.innerHTML = `
-                                📱 <strong>App not found?</strong><br><br>
-                                If you have Carri installed via TestFlight, try:<br>
-                                • Copy this link: <code>${deepLink}</code><br>
-                                • Paste it in Safari and press Go<br><br>
-                                Or make sure:<br>
-                                • The app is installed and up to date<br>
-                                • You're signed in to TestFlight<br><br>
-                                <em>Your invitation has been saved and will be available when you open the app.</em>
-                            `;
+                            if (storeUrl) {
+                                const storeName = isIOS() ? 'App Store' : 'Google Play';
+                                messageDiv.innerHTML = `
+                                    📱 <strong>App not found?</strong><br><br>
+                                    We couldn't open Carri automatically.<br>
+                                    Install Carri from the ${storeName}, then return and tap the button again.<br><br>
+                                    <a class="app-button" href="${storeUrl}">Open ${storeName}</a><br><br>
+                                    <em>Your invitation has been saved and will be available when you open the app.</em>
+                                `;
+                            } else {
+                                messageDiv.innerHTML = `
+                                    📱 <strong>App not found?</strong><br><br>
+                                    We couldn't open Carri automatically. Please make sure the app is installed and up to date, then try again.<br><br>
+                                    <em>Your invitation has been saved and will be available when you open the app.</em>
+                                `;
+                            }
                             messageDiv.style.display = 'block';
                         }
                     }
