@@ -408,10 +408,17 @@
             if (inviteData.family) params.set('family', inviteData.family);
             if (inviteData.source) params.set('source', inviteData.source);
             
-            // Use the correct deep link scheme: exp+carri://invite/{invitationId}
-            const deepLink = `exp+carri://invite/${inviteData.id}`;
+            // Deep link schemes to try in order (new production app + legacy TestFlight)
+            const deepLinkCandidates = [];
+            if (inviteData.id) {
+                deepLinkCandidates.push(`carri://invite/${inviteData.id}`);
+                deepLinkCandidates.push(`exp+carri://invite/${inviteData.id}`);
+            } else {
+                deepLinkCandidates.push('carri://');
+                deepLinkCandidates.push('exp+carri://');
+            }
             
-            const iosStoreUrl = 'https://apps.apple.com/app/carri/id6738027288';
+            const iosStoreUrl = 'https://apps.apple.com/us/app/carri/id6749689086';
             const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.carri.app';
 
             const messageDiv = document.getElementById('appMessage');
@@ -451,32 +458,45 @@
                 window.addEventListener('blur', onBlur);
 
                 // Try multiple methods to open the app
-                const tryDeepLink = () => {
-                    console.log('Trying deep link:', deepLink);
-                    
-                    // Method 1: Try direct window.location
-                    try {
-                        window.location.href = deepLink;
-                    } catch (e) {
-                        console.log('Direct location failed, trying iframe method');
-                        
-                        // Method 2: Fallback to iframe method
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = deepLink;
-                        document.body.appendChild(iframe);
-                        
-                        // Clean up iframe after a short delay
-                        setTimeout(() => {
-                            if (document.body.contains(iframe)) {
-                                document.body.removeChild(iframe);
-                            }
-                        }, 100);
+                const tryDeepLink = (index = 0) => {
+                    if (index >= deepLinkCandidates.length) {
+                        return;
                     }
+                    const deepLink = deepLinkCandidates[index];
+                    console.log('Trying deep link:', deepLink);
+
+                    const attemptOpen = () => {
+                        if (isIOS()) {
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.src = deepLink;
+                            document.body.appendChild(iframe);
+                            setTimeout(() => {
+                                if (document.body.contains(iframe)) {
+                                    document.body.removeChild(iframe);
+                                }
+                            }, 250);
+                        } else {
+                            window.location.href = deepLink;
+                        }
+                    };
+
+                    try {
+                        attemptOpen();
+                    } catch (e) {
+                        console.log('Deep link attempt failed, trying next candidate if available', e);
+                    }
+
+                    // Try next candidate shortly after if app still not opened
+                    setTimeout(() => {
+                        if (!appOpened) {
+                            tryDeepLink(index + 1);
+                        }
+                    }, 300);
                 };
 
                 // Try to open the app
-                tryDeepLink();
+                tryDeepLink(0);
 
                 // Fallback after longer timeout
                 const fallbackTimeoutMs = 3000; // Increased to 3 seconds
@@ -504,6 +524,11 @@
                                 `;
                             }
                             messageDiv.style.display = 'block';
+                        }
+
+                        // Redirect to the appropriate store automatically on mobile
+                        if (storeUrl) {
+                            window.location.href = storeUrl;
                         }
                     }
                 }, fallbackTimeoutMs);
