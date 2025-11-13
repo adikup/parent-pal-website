@@ -491,71 +491,35 @@
                 };
                 window.addEventListener('pagehide', onPageHide);
 
-                // Try to open the app using iframe to avoid Safari errors
-                const tryDeepLinkWithIframe = (index = 0) => {
-                    if (index >= deepLinkCandidates.length || fallbackTriggered) {
-                        return;
-                    }
-                    
-                    const deepLink = deepLinkCandidates[index];
-                    console.log('Invite data:', inviteData);
-                    console.log('Trying deep link:', deepLink);
+                // Simple approach: try to open with window.location, then show store button if fails
+                const primaryDeepLink = deepLinkCandidates[0]; // Use the first/best deep link
+                console.log('Invite data:', inviteData);
+                console.log('Trying primary deep link:', primaryDeepLink);
 
-                    // Use hidden iframe to attempt deep link (avoids Safari error dialog)
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.style.width = '1px';
-                    iframe.style.height = '1px';
-                    iframe.src = deepLink;
-                    document.body.appendChild(iframe);
-                    
-                    // Clean up iframe
-                    setTimeout(() => {
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
-                        }
-                    }, 1000);
+                // Try to open the app with the primary deep link
+                try {
+                    window.location.href = primaryDeepLink;
+                } catch (e) {
+                    console.log('Deep link attempt failed', e);
+                }
 
-                    // Try next candidate shortly after if app still not opened
-                    setTimeout(() => {
-                        if (!appOpened && !fallbackTriggered) {
-                            tryDeepLinkWithIframe(index + 1);
-                        }
-                    }, 300);
-                };
-
-                // Try to open the app
-                tryDeepLinkWithIframe(0);
-
-                // Fallback: redirect to store automatically if app doesn't open within timeout
-                const fallbackTimeoutMs = 2500; // 2.5 seconds - quick enough to avoid Safari error
+                // Show App Store button after timeout if app didn't open
+                const fallbackTimeoutMs = 2000;
                 setTimeout(() => {
                     if (!appOpened && !fallbackTriggered) {
                         fallbackTriggered = true;
-                        console.log('App did not open, redirecting to store');
+                        console.log('App did not open, showing store button');
                         
-                        // Automatically redirect to store to avoid Safari error
-                        if (storeUrl) {
-                            if (messageDiv) {
-                                const storeName = isIOS() ? 'App Store' : 'Google Play';
-                                messageDiv.innerHTML = `
-                                    📱 Opening ${storeName}...<br><br>
-                                    <em>Your invitation has been saved and will be available when you open the app.</em>
-                                `;
-                                messageDiv.style.display = 'block';
-                            }
-                            
-                            // Redirect immediately to beat Safari's error dialog
-                            window.location.href = storeUrl;
-                        } else {
-                            if (messageDiv) {
-                                messageDiv.innerHTML = `
-                                    📱 <strong>App not found?</strong><br><br>
-                                    We couldn't open Carri automatically. Please make sure the app is installed and up to date, then try again.<br><br>
-                                    <em>Your invitation has been saved and will be available when you open the app.</em>
-                                `;
-                                messageDiv.style.display = 'block';
-                            }
+                        // Show App Store button
+                        if (messageDiv && storeUrl) {
+                            const storeName = isIOS() ? 'App Store' : 'Google Play';
+                            messageDiv.innerHTML = `
+                                📱 <strong>Don't have Carri yet?</strong><br><br>
+                                Download it from the ${storeName} to accept this invitation.<br><br>
+                                <a class="app-button" href="${storeUrl}" style="display: inline-block; margin-top: 8px;">Open ${storeName}</a><br><br>
+                                <em>Your invitation will be saved and available when you open the app.</em>
+                            `;
+                            messageDiv.style.display = 'block';
                         }
                     }
                 }, fallbackTimeoutMs);
