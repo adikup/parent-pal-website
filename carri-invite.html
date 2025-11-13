@@ -400,7 +400,9 @@
         }
 
         // Single-button deep link with store fallback
-        function openApp(inviteData) {
+        function openApp(inviteData, options = {}) {
+            const { useDirectLink = false } = options; // Use window.location for button clicks
+            
             // Build deep link with all parameters
             const inviteId = inviteData.id || '';
             const params = new URLSearchParams();
@@ -470,42 +472,80 @@
                 };
                 window.addEventListener('pagehide', onPageHide);
 
-                // Use iframe to silently try opening the app (avoids Safari error)
                 console.log('Invite data:', inviteData);
                 console.log('Deep link:', deepLink);
 
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.style.border = 'none';
-                iframe.style.width = '1px';
-                iframe.style.height = '1px';
-                iframe.src = deepLink;
-                document.body.appendChild(iframe);
-
-                // Clean up iframe after delay
-                setTimeout(() => {
-                    if (document.body.contains(iframe)) {
-                        document.body.removeChild(iframe);
+                // Try to open the app
+                if (useDirectLink) {
+                    // For button clicks, use direct window.location (more reliable)
+                    // Check immediately if app opened (before Safari error can appear)
+                    const checkImmediate = setTimeout(() => {
+                        if (document.hidden || !document.hasFocus()) {
+                            handleAppOpened();
+                        }
+                    }, 100);
+                    
+                    try {
+                        window.location.href = deepLink;
+                        // Give it a moment, then check again
+                        setTimeout(() => {
+                            clearTimeout(checkImmediate);
+                            if (document.hidden || !document.hasFocus()) {
+                                handleAppOpened();
+                            }
+                        }, 500);
+                    } catch (e) {
+                        clearTimeout(checkImmediate);
+                        console.log('Direct link failed:', e);
                     }
-                }, 2000);
+                } else {
+                    // For auto-open, use iframe to avoid Safari error
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.style.border = 'none';
+                    iframe.style.width = '1px';
+                    iframe.style.height = '1px';
+                    iframe.src = deepLink;
+                    document.body.appendChild(iframe);
+
+                    // Clean up iframe after delay
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 2000);
+                }
 
                 // Show App Store button after timeout if app didn't open
-                const fallbackTimeoutMs = 2500;
+                const fallbackTimeoutMs = 3000; // Increased to 3 seconds for better detection
                 setTimeout(() => {
                     if (!appOpened && !fallbackTriggered) {
                         fallbackTriggered = true;
                         console.log('App did not open, showing store button');
                         
-                        // Show App Store button
+                        // Ensure invite data is stored before showing store button
+                        storeInviteData(inviteData);
+                        
+                        // Show App Store button with click handler that stores data
                         if (messageDiv && storeUrl) {
                             const storeName = isIOS() ? 'App Store' : 'Google Play';
+                            const storeButtonId = 'storeButton_' + Date.now();
                             messageDiv.innerHTML = `
                                 📱 <strong>Don't have Carri yet?</strong><br><br>
                                 Download it from the ${storeName} to accept this invitation.<br><br>
-                                <a class="app-button" href="${storeUrl}" style="display: inline-block; margin-top: 8px;">Open ${storeName}</a><br><br>
+                                <a id="${storeButtonId}" class="app-button" href="${storeUrl}" style="display: inline-block; margin-top: 8px;">Open ${storeName}</a><br><br>
                                 <em>Your invitation will be saved and available when you open the app.</em>
                             `;
                             messageDiv.style.display = 'block';
+                            
+                            // Ensure data is stored when clicking store button
+                            const storeBtn = document.getElementById(storeButtonId);
+                            if (storeBtn) {
+                                storeBtn.addEventListener('click', function() {
+                                    storeInviteData(inviteData);
+                                    console.log('Stored invite data before going to store:', inviteData);
+                                });
+                            }
                         }
                     }
                 }, fallbackTimeoutMs);
@@ -578,7 +618,8 @@
                 // Set up the open app button
                 openAppBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    openApp(inviteData);
+                    // Use direct link for button clicks (more reliable detection)
+                    openApp(inviteData, { useDirectLink: true });
                 });
                 
                 // Auto-try to open app on mobile
