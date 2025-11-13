@@ -400,47 +400,45 @@
         }
 
         // Single-button deep link with store fallback
-        function openApp(inviteData) {
+        function openApp(inviteData, options = {}) {
+            const { triggeredByUser = false } = options;
             // Build comprehensive deep link with all parameters
             const params = new URLSearchParams();
-            // Include all params except ID (since ID goes in path)
             if (inviteData.inviter) params.set('inviter', inviteData.inviter);
             if (inviteData.family) params.set('family', inviteData.family);
             if (inviteData.source) params.set('source', inviteData.source);
             
-            // Also create a version with ID in query params (for query-only deep links)
-            const paramsWithId = new URLSearchParams();
-            if (inviteData.id) paramsWithId.set('id', inviteData.id);
-            if (inviteData.inviter) paramsWithId.set('inviter', inviteData.inviter);
-            if (inviteData.family) paramsWithId.set('family', inviteData.family);
-            if (inviteData.source) paramsWithId.set('source', inviteData.source);
-            
-            // Build query strings
-            const queryString = params.toString(); // Without ID (for path-based links)
-            const queryStringWithId = paramsWithId.toString(); // With ID (for query-only links)
-            
             // Deep link schemes to try in order (new production app + legacy TestFlight)
             const deepLinkCandidates = [];
             const inviteId = inviteData.id || '';
+            const queryString = params.toString();
+            
+            const buildQueryWithId = () => {
+                const paramsWithId = new URLSearchParams(params);
+                if (inviteId) paramsWithId.set('id', inviteId);
+                return paramsWithId.toString();
+            };
+            
+            const queryStringWithId = buildQueryWithId();
 
             if (inviteId) {
-                // Path-based deep links (with ID in path, other params in query)
+                // Core deep links the native app already supports
+                deepLinkCandidates.push(`carri://invite/${inviteId}`);
+                deepLinkCandidates.push(`carri://invite?id=${inviteId}`);
+                deepLinkCandidates.push(`carri://?id=${inviteId}`);
+                deepLinkCandidates.push(`exp+carri://invite/${inviteId}`);
+                deepLinkCandidates.push(`exp+carri://invite?id=${inviteId}`);
+
+                // Extended variants that include more metadata
                 if (queryString) {
                     deepLinkCandidates.push(`carri://invite/${inviteId}?${queryString}`);
                     deepLinkCandidates.push(`exp+carri://invite/${inviteId}?${queryString}`);
                 }
-                // Path-based without query params (fallback)
-                deepLinkCandidates.push(`carri://invite/${inviteId}`);
-                deepLinkCandidates.push(`exp+carri://invite/${inviteId}`);
-                
-                // Query-based deep links (with all params including ID)
                 if (queryStringWithId) {
                     deepLinkCandidates.push(`carri://invite?${queryStringWithId}`);
-                    deepLinkCandidates.push(`carri://?${queryStringWithId}`);
                     deepLinkCandidates.push(`carri://open?${queryStringWithId}`);
                     deepLinkCandidates.push(`carri://open/invite?${queryStringWithId}`);
                     deepLinkCandidates.push(`exp+carri://invite?${queryStringWithId}`);
-                    deepLinkCandidates.push(`exp+carri://?${queryStringWithId}`);
                     deepLinkCandidates.push(`exp+carri://open?${queryStringWithId}`);
                     deepLinkCandidates.push(`exp+carri://open/invite?${queryStringWithId}`);
                 }
@@ -495,40 +493,61 @@
                 window.addEventListener('pagehide', onPageHide);
 
                 // Try to open the app using the best method for the platform
-                const tryDeepLink = () => {
-                    // Use the first (most likely) deep link candidate
-                    const deepLink = deepLinkCandidates[0] || `carri://invite/${inviteId}`;
+                const tryDeepLink = (index = 0) => {
+                    if (index >= deepLinkCandidates.length) {
+                        return;
+                    }
+
+                    const deepLink = deepLinkCandidates[index];
                     console.log('Invite data:', inviteData);
                     console.log('Trying deep link:', deepLink);
-                    console.log('All deep link candidates:', deepLinkCandidates);
 
-                    if (isIOS()) {
-                        // On iOS, use iframe method to avoid Safari error dialog
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.style.width = '1px';
-                        iframe.style.height = '1px';
-                        iframe.src = deepLink;
-                        document.body.appendChild(iframe);
-                        
-                        // Clean up iframe after a short delay
-                        setTimeout(() => {
-                            if (document.body.contains(iframe)) {
-                                document.body.removeChild(iframe);
+                    const attemptIOSDeepLink = () => {
+                        if (triggeredByUser) {
+                            try {
+                                window.location.href = deepLink;
+                            } catch (err) {
+                                console.log('iOS direct deep link failed', err);
                             }
-                        }, 2500);
-                    } else {
-                        // On Android, use direct location
+                        } else {
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.style.width = '1px';
+                            iframe.style.height = '1px';
+                            iframe.src = deepLink;
+                            document.body.appendChild(iframe);
+                            
+                            setTimeout(() => {
+                                if (document.body.contains(iframe)) {
+                                    document.body.removeChild(iframe);
+                                }
+                            }, 1000);
+                        }
+                    };
+
+                    const attemptAndroidDeepLink = () => {
                         try {
                             window.location.href = deepLink;
-                        } catch (e) {
-                            console.log('Deep link attempt failed', e);
+                        } catch (err) {
+                            console.log('Android deep link failed', err);
                         }
+                    };
+
+                    if (isIOS()) {
+                        attemptIOSDeepLink();
+                    } else {
+                        attemptAndroidDeepLink();
                     }
+
+                    setTimeout(() => {
+                        if (!appOpened) {
+                            tryDeepLink(index + 1);
+                        }
+                    }, 600);
                 };
 
                 // Try to open the app
-                tryDeepLink();
+                tryDeepLink(0);
 
                 // Fallback: redirect to store if app doesn't open within timeout
                 const fallbackTimeoutMs = 2500; // 2.5 seconds - enough time for app to open
@@ -635,7 +654,7 @@
                 // Set up the open app button
                 openAppBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    openApp(inviteData);
+                    openApp(inviteData, { triggeredByUser: true });
                 });
                 
                 // Auto-try to open app on mobile
