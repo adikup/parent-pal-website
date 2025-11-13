@@ -481,61 +481,73 @@
                 };
                 window.addEventListener('pagehide', onPageHide);
 
-                // Try multiple methods to open the app
-                const tryDeepLink = (index = 0) => {
-                    if (index >= deepLinkCandidates.length) {
-                        return;
-                    }
-                    const deepLink = deepLinkCandidates[index];
+                // Try to open the app using the best method for the platform
+                const tryDeepLink = () => {
+                    // Use the first (most likely) deep link candidate
+                    const deepLink = deepLinkCandidates[0] || `carri://invite/${inviteId}`;
                     console.log('Trying deep link:', deepLink);
 
-                    const attemptOpen = () => {
-                        window.location.href = deepLink;
-                    };
-
-                    try {
-                        attemptOpen();
-                    } catch (e) {
-                        console.log('Deep link attempt failed, trying next candidate if available', e);
-                    }
-
-                    // Try next candidate shortly after if app still not opened
-                    setTimeout(() => {
-                        if (!appOpened) {
-                            tryDeepLink(index + 1);
+                    if (isIOS()) {
+                        // On iOS, use iframe method to avoid Safari error dialog
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.style.width = '1px';
+                        iframe.style.height = '1px';
+                        iframe.src = deepLink;
+                        document.body.appendChild(iframe);
+                        
+                        // Clean up iframe after a short delay
+                        setTimeout(() => {
+                            if (document.body.contains(iframe)) {
+                                document.body.removeChild(iframe);
+                            }
+                        }, 2500);
+                    } else {
+                        // On Android, use direct location
+                        try {
+                            window.location.href = deepLink;
+                        } catch (e) {
+                            console.log('Deep link attempt failed', e);
                         }
-                    }, 300);
+                    }
                 };
 
                 // Try to open the app
-                tryDeepLink(0);
+                tryDeepLink();
 
-                // Fallback after longer timeout
-                const fallbackTimeoutMs = 3000; // Increased to 3 seconds
+                // Fallback: redirect to store if app doesn't open within timeout
+                const fallbackTimeoutMs = 2500; // 2.5 seconds - enough time for app to open
                 setTimeout(() => {
                     if (!appOpened && !fallbackTriggered) {
                         fallbackTriggered = true;
-                        console.log('App did not open, showing fallback message');
+                        console.log('App did not open, redirecting to store');
                         
-                        // Show download/help message instead of TestFlight guidance
-                        if (messageDiv) {
-                            if (storeUrl) {
+                        // Automatically redirect to store if app not installed
+                        if (storeUrl) {
+                            // Update message before redirecting
+                            if (messageDiv) {
                                 const storeName = isIOS() ? 'App Store' : 'Google Play';
                                 messageDiv.innerHTML = `
-                                    📱 <strong>App not found?</strong><br><br>
-                                    We couldn't open Carri automatically.<br>
-                                    Install Carri from the ${storeName}, then return and tap the button again.<br><br>
-                                    <a class="app-button" href="${storeUrl}">Open ${storeName}</a><br><br>
+                                    📱 Redirecting to ${storeName}...<br><br>
                                     <em>Your invitation has been saved and will be available when you open the app.</em>
                                 `;
-                            } else {
+                                messageDiv.style.display = 'block';
+                            }
+                            
+                            // Redirect to store after a brief moment
+                            setTimeout(() => {
+                                window.location.href = storeUrl;
+                            }, 500);
+                        } else {
+                            // Show fallback message if no store URL
+                            if (messageDiv) {
                                 messageDiv.innerHTML = `
                                     📱 <strong>App not found?</strong><br><br>
                                     We couldn't open Carri automatically. Please make sure the app is installed and up to date, then try again.<br><br>
                                     <em>Your invitation has been saved and will be available when you open the app.</em>
                                 `;
+                                messageDiv.style.display = 'block';
                             }
-                            messageDiv.style.display = 'block';
                         }
                     }
                 }, fallbackTimeoutMs);
