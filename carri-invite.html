@@ -491,8 +491,8 @@
                 };
                 window.addEventListener('pagehide', onPageHide);
 
-                // Try to open the app using the best method for the platform
-                const tryDeepLink = (index = 0) => {
+                // Try to open the app using iframe to avoid Safari errors
+                const tryDeepLinkWithIframe = (index = 0) => {
                     if (index >= deepLinkCandidates.length || fallbackTriggered) {
                         return;
                     }
@@ -501,22 +501,31 @@
                     console.log('Invite data:', inviteData);
                     console.log('Trying deep link:', deepLink);
 
-                    try {
-                        window.location.href = deepLink;
-                    } catch (e) {
-                        console.log('Deep link attempt failed, trying next candidate if available', e);
-                    }
+                    // Use hidden iframe to attempt deep link (avoids Safari error dialog)
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.style.width = '1px';
+                    iframe.style.height = '1px';
+                    iframe.src = deepLink;
+                    document.body.appendChild(iframe);
+                    
+                    // Clean up iframe
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 1000);
 
                     // Try next candidate shortly after if app still not opened
                     setTimeout(() => {
                         if (!appOpened && !fallbackTriggered) {
-                            tryDeepLink(index + 1);
+                            tryDeepLinkWithIframe(index + 1);
                         }
                     }, 300);
                 };
 
                 // Try to open the app
-                tryDeepLink(0);
+                tryDeepLinkWithIframe(0);
 
                 // Fallback: redirect to store automatically if app doesn't open within timeout
                 const fallbackTimeoutMs = 2500; // 2.5 seconds - quick enough to avoid Safari error
