@@ -491,20 +491,29 @@
                 };
                 window.addEventListener('pagehide', onPageHide);
 
-                // Simple approach: try to open with window.location, then show store button if fails
+                // Use iframe to silently try opening the app (avoids Safari error)
                 const primaryDeepLink = deepLinkCandidates[0]; // Use the first/best deep link
                 console.log('Invite data:', inviteData);
                 console.log('Trying primary deep link:', primaryDeepLink);
 
-                // Try to open the app with the primary deep link
-                try {
-                    window.location.href = primaryDeepLink;
-                } catch (e) {
-                    console.log('Deep link attempt failed', e);
-                }
+                // Create hidden iframe to attempt opening the app without showing error
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.style.border = 'none';
+                iframe.style.width = '1px';
+                iframe.style.height = '1px';
+                iframe.src = primaryDeepLink;
+                document.body.appendChild(iframe);
+
+                // Clean up iframe after a short delay
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        document.body.removeChild(iframe);
+                    }
+                }, 2000);
 
                 // Show App Store button after timeout if app didn't open
-                const fallbackTimeoutMs = 2000;
+                const fallbackTimeoutMs = 2500;
                 setTimeout(() => {
                     if (!appOpened && !fallbackTriggered) {
                         fallbackTriggered = true;
