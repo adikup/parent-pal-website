@@ -502,26 +502,19 @@
                     console.log('Trying deep link:', deepLink);
 
                     const attemptIOSDeepLink = () => {
-                        if (triggeredByUser) {
-                            try {
-                                window.location.href = deepLink;
-                            } catch (err) {
-                                console.log('iOS direct deep link failed', err);
+                        // Always use iframe on iOS to avoid Safari navigation errors
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.style.width = '1px';
+                        iframe.style.height = '1px';
+                        iframe.src = deepLink;
+                        document.body.appendChild(iframe);
+                        
+                        setTimeout(() => {
+                            if (document.body.contains(iframe)) {
+                                document.body.removeChild(iframe);
                             }
-                        } else {
-                            const iframe = document.createElement('iframe');
-                            iframe.style.display = 'none';
-                            iframe.style.width = '1px';
-                            iframe.style.height = '1px';
-                            iframe.src = deepLink;
-                            document.body.appendChild(iframe);
-                            
-                            setTimeout(() => {
-                                if (document.body.contains(iframe)) {
-                                    document.body.removeChild(iframe);
-                                }
-                            }, 1000);
-                        }
+                        }, 1000);
                     };
 
                     const attemptAndroidDeepLink = () => {
@@ -542,14 +535,14 @@
                         if (!appOpened) {
                             tryDeepLink(index + 1);
                         }
-                    }, 600);
+                    }, 300);
                 };
 
                 // Try to open the app
                 tryDeepLink(0);
 
                 // Fallback: redirect to store if app doesn't open within timeout
-                const fallbackTimeoutMs = 2500; // 2.5 seconds - enough time for app to open
+                const fallbackTimeoutMs = 3500; // 3.5 seconds - enough time to try all deep links
                 setTimeout(() => {
                     if (!appOpened && !fallbackTriggered) {
                         fallbackTriggered = true;
