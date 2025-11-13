@@ -421,31 +421,30 @@
             
             const queryStringWithId = buildQueryWithId();
 
-            if (inviteId) {
-                // Core deep links the native app already supports
-                deepLinkCandidates.push(`carri://invite/${inviteId}`);
-                deepLinkCandidates.push(`carri://invite?id=${inviteId}`);
-                deepLinkCandidates.push(`carri://?id=${inviteId}`);
-                deepLinkCandidates.push(`exp+carri://invite/${inviteId}`);
-                deepLinkCandidates.push(`exp+carri://invite?id=${inviteId}`);
+            const schemes = ['exp+carri', 'carri'];
 
-                // Extended variants that include more metadata
-                if (queryString) {
-                    deepLinkCandidates.push(`carri://invite/${inviteId}?${queryString}`);
-                    deepLinkCandidates.push(`exp+carri://invite/${inviteId}?${queryString}`);
-                }
-                if (queryStringWithId) {
-                    deepLinkCandidates.push(`carri://invite?${queryStringWithId}`);
-                    deepLinkCandidates.push(`carri://open?${queryStringWithId}`);
-                    deepLinkCandidates.push(`carri://open/invite?${queryStringWithId}`);
-                    deepLinkCandidates.push(`exp+carri://invite?${queryStringWithId}`);
-                    deepLinkCandidates.push(`exp+carri://open?${queryStringWithId}`);
-                    deepLinkCandidates.push(`exp+carri://open/invite?${queryStringWithId}`);
-                }
+            if (inviteId) {
+                schemes.forEach((scheme) => {
+                    // Core deep links (ID in path)
+                    deepLinkCandidates.push(`${scheme}://invite/${inviteId}`);
+                    deepLinkCandidates.push(`${scheme}://invite?id=${inviteId}`);
+                    deepLinkCandidates.push(`${scheme}://?id=${inviteId}`);
+
+                    // Extended variants with metadata
+                    if (queryString) {
+                        deepLinkCandidates.push(`${scheme}://invite/${inviteId}?${queryString}`);
+                    }
+                    if (queryStringWithId) {
+                        deepLinkCandidates.push(`${scheme}://invite?${queryStringWithId}`);
+                        deepLinkCandidates.push(`${scheme}://open?${queryStringWithId}`);
+                        deepLinkCandidates.push(`${scheme}://open/invite?${queryStringWithId}`);
+                    }
+                });
             }
 
-            deepLinkCandidates.push('carri://');
-            deepLinkCandidates.push('exp+carri://');
+            schemes.forEach((scheme) => {
+                deepLinkCandidates.push(`${scheme}://`);
+            });
             
             const iosStoreUrl = 'https://apps.apple.com/us/app/carri/id6749689086';
             const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.carri.app';
