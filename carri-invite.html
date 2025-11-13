@@ -410,13 +410,31 @@
             
             // Deep link schemes to try in order (new production app + legacy TestFlight)
             const deepLinkCandidates = [];
-            if (inviteData.id) {
-                deepLinkCandidates.push(`carri://invite/${inviteData.id}`);
-                deepLinkCandidates.push(`exp+carri://invite/${inviteData.id}`);
-            } else {
-                deepLinkCandidates.push('carri://');
-                deepLinkCandidates.push('exp+carri://');
+            const inviteId = inviteData.id || '';
+            const inviteQueryParams = [
+                `id=${inviteId}`,
+                `invite=${inviteId}`,
+                `inviteId=${inviteId}`
+            ];
+
+            if (inviteId) {
+                deepLinkCandidates.push(`carri://invite/${inviteId}`);
+                deepLinkCandidates.push(`exp+carri://invite/${inviteId}`);
+
+                inviteQueryParams.forEach(param => {
+                    deepLinkCandidates.push(`carri://invite?${param}`);
+                    deepLinkCandidates.push(`carri://?${param}`);
+                    deepLinkCandidates.push(`carri://open?${param}`);
+                    deepLinkCandidates.push(`carri://open/invite?${param}`);
+                    deepLinkCandidates.push(`exp+carri://invite?${param}`);
+                    deepLinkCandidates.push(`exp+carri://?${param}`);
+                    deepLinkCandidates.push(`exp+carri://open?${param}`);
+                    deepLinkCandidates.push(`exp+carri://open/invite?${param}`);
+                });
             }
+
+            deepLinkCandidates.push('carri://');
+            deepLinkCandidates.push('exp+carri://');
             
             const iosStoreUrl = 'https://apps.apple.com/us/app/carri/id6749689086';
             const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.carri.app';
@@ -472,19 +490,7 @@
                     console.log('Trying deep link:', deepLink);
 
                     const attemptOpen = () => {
-                        if (isIOS()) {
-                            const iframe = document.createElement('iframe');
-                            iframe.style.display = 'none';
-                            iframe.src = deepLink;
-                            document.body.appendChild(iframe);
-                            setTimeout(() => {
-                                if (document.body.contains(iframe)) {
-                                    document.body.removeChild(iframe);
-                                }
-                            }, 250);
-                        } else {
-                            window.location.href = deepLink;
-                        }
+                        window.location.href = deepLink;
                     };
 
                     try {
