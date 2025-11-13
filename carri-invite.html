@@ -400,61 +400,32 @@
         }
 
         // Single-button deep link with store fallback
-        function openApp(inviteData, options = {}) {
-            const { triggeredByUser = false } = options;
-            // Build comprehensive deep link with all parameters
+        function openApp(inviteData) {
+            // Build deep link with all parameters
+            const inviteId = inviteData.id || '';
             const params = new URLSearchParams();
+            
+            // Include all invite parameters (except id, which goes in path)
             if (inviteData.inviter) params.set('inviter', inviteData.inviter);
             if (inviteData.family) params.set('family', inviteData.family);
             if (inviteData.source) params.set('source', inviteData.source);
             
-            // Deep link schemes to try in order (new production app + legacy TestFlight)
-            const deepLinkCandidates = [];
-            const inviteId = inviteData.id || '';
             const queryString = params.toString();
             
-            const buildQueryWithId = () => {
-                const paramsWithId = new URLSearchParams(params);
-                if (inviteId) paramsWithId.set('id', inviteId);
-                return paramsWithId.toString();
-            };
-            
-            const queryStringWithId = buildQueryWithId();
-
-            const schemes = ['exp+carri', 'carri'];
-
-            if (inviteId) {
-                schemes.forEach((scheme) => {
-                    // Core deep links (ID in path)
-                    deepLinkCandidates.push(`${scheme}://invite/${inviteId}`);
-                    deepLinkCandidates.push(`${scheme}://invite?id=${inviteId}`);
-                    deepLinkCandidates.push(`${scheme}://?id=${inviteId}`);
-
-                    // Extended variants with metadata
-                    if (queryString) {
-                        deepLinkCandidates.push(`${scheme}://invite/${inviteId}?${queryString}`);
-                    }
-                    if (queryStringWithId) {
-                        deepLinkCandidates.push(`${scheme}://invite?${queryStringWithId}`);
-                        deepLinkCandidates.push(`${scheme}://open?${queryStringWithId}`);
-                        deepLinkCandidates.push(`${scheme}://open/invite?${queryStringWithId}`);
-                    }
-                });
-            }
-
-            schemes.forEach((scheme) => {
-                deepLinkCandidates.push(`${scheme}://`);
-            });
+            // Use carri:// scheme (App Store version) with ID in path and other params in query
+            // Format: carri://invite/{id}?inviter={name}&family={name}&source=web_invite
+            const deepLink = inviteId 
+                ? `carri://invite/${inviteId}${queryString ? '?' + queryString : ''}`
+                : 'carri://';
             
             const iosStoreUrl = 'https://apps.apple.com/us/app/carri/id6749689086';
             const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.carri.app';
-
             const messageDiv = document.getElementById('appMessage');
 
             if (isMobile()) {
                 const storeUrl = isIOS() ? iosStoreUrl : (isAndroid() ? androidStoreUrl : null);
 
-                // Store invite data before attempting to open app
+                // Store invite data BEFORE attempting to open app (for return from App Store)
                 storeInviteData(inviteData);
 
                 if (messageDiv) {
@@ -469,43 +440,49 @@
                 let appOpened = false;
                 let fallbackTriggered = false;
 
+                // Function to handle successful app open
+                const handleAppOpened = () => {
+                    if (!appOpened) {
+                        appOpened = true;
+                        console.log('App opened successfully');
+                        // Clear stored invite data since app opened successfully
+                        localStorage.removeItem('carri_invite_data');
+                        sessionStorage.removeItem('carri_invite_data');
+                    }
+                };
+
                 // Listen for page visibility changes to detect if app opened
                 const onVisibilityChange = () => {
                     if (document.hidden) {
-                        appOpened = true;
-                        console.log('App likely opened - page became hidden');
+                        handleAppOpened();
                     }
                 };
                 document.addEventListener('visibilitychange', onVisibilityChange);
 
                 // Listen for page focus changes
                 const onBlur = () => {
-                    appOpened = true;
-                    console.log('App likely opened - page lost focus');
+                    handleAppOpened();
                 };
                 window.addEventListener('blur', onBlur);
 
                 const onPageHide = () => {
-                    appOpened = true;
-                    console.log('App likely opened - page hidden');
+                    handleAppOpened();
                 };
                 window.addEventListener('pagehide', onPageHide);
 
                 // Use iframe to silently try opening the app (avoids Safari error)
-                const primaryDeepLink = deepLinkCandidates[0]; // Use the first/best deep link
                 console.log('Invite data:', inviteData);
-                console.log('Trying primary deep link:', primaryDeepLink);
+                console.log('Deep link:', deepLink);
 
-                // Create hidden iframe to attempt opening the app without showing error
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.style.border = 'none';
                 iframe.style.width = '1px';
                 iframe.style.height = '1px';
-                iframe.src = primaryDeepLink;
+                iframe.src = deepLink;
                 document.body.appendChild(iframe);
 
-                // Clean up iframe after a short delay
+                // Clean up iframe after delay
                 setTimeout(() => {
                     if (document.body.contains(iframe)) {
                         document.body.removeChild(iframe);
@@ -601,7 +578,7 @@
                 // Set up the open app button
                 openAppBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    openApp(inviteData, { triggeredByUser: true });
+                    openApp(inviteData);
                 });
                 
                 // Auto-try to open app on mobile
