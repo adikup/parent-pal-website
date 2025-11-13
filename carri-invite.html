@@ -403,34 +403,47 @@
         function openApp(inviteData) {
             // Build comprehensive deep link with all parameters
             const params = new URLSearchParams();
-            if (inviteData.id) params.set('id', inviteData.id);
+            // Include all params except ID (since ID goes in path)
             if (inviteData.inviter) params.set('inviter', inviteData.inviter);
             if (inviteData.family) params.set('family', inviteData.family);
             if (inviteData.source) params.set('source', inviteData.source);
             
+            // Also create a version with ID in query params (for query-only deep links)
+            const paramsWithId = new URLSearchParams();
+            if (inviteData.id) paramsWithId.set('id', inviteData.id);
+            if (inviteData.inviter) paramsWithId.set('inviter', inviteData.inviter);
+            if (inviteData.family) paramsWithId.set('family', inviteData.family);
+            if (inviteData.source) paramsWithId.set('source', inviteData.source);
+            
+            // Build query strings
+            const queryString = params.toString(); // Without ID (for path-based links)
+            const queryStringWithId = paramsWithId.toString(); // With ID (for query-only links)
+            
             // Deep link schemes to try in order (new production app + legacy TestFlight)
             const deepLinkCandidates = [];
             const inviteId = inviteData.id || '';
-            const inviteQueryParams = [
-                `id=${inviteId}`,
-                `invite=${inviteId}`,
-                `inviteId=${inviteId}`
-            ];
 
             if (inviteId) {
+                // Path-based deep links (with ID in path, other params in query)
+                if (queryString) {
+                    deepLinkCandidates.push(`carri://invite/${inviteId}?${queryString}`);
+                    deepLinkCandidates.push(`exp+carri://invite/${inviteId}?${queryString}`);
+                }
+                // Path-based without query params (fallback)
                 deepLinkCandidates.push(`carri://invite/${inviteId}`);
                 deepLinkCandidates.push(`exp+carri://invite/${inviteId}`);
-
-                inviteQueryParams.forEach(param => {
-                    deepLinkCandidates.push(`carri://invite?${param}`);
-                    deepLinkCandidates.push(`carri://?${param}`);
-                    deepLinkCandidates.push(`carri://open?${param}`);
-                    deepLinkCandidates.push(`carri://open/invite?${param}`);
-                    deepLinkCandidates.push(`exp+carri://invite?${param}`);
-                    deepLinkCandidates.push(`exp+carri://?${param}`);
-                    deepLinkCandidates.push(`exp+carri://open?${param}`);
-                    deepLinkCandidates.push(`exp+carri://open/invite?${param}`);
-                });
+                
+                // Query-based deep links (with all params including ID)
+                if (queryStringWithId) {
+                    deepLinkCandidates.push(`carri://invite?${queryStringWithId}`);
+                    deepLinkCandidates.push(`carri://?${queryStringWithId}`);
+                    deepLinkCandidates.push(`carri://open?${queryStringWithId}`);
+                    deepLinkCandidates.push(`carri://open/invite?${queryStringWithId}`);
+                    deepLinkCandidates.push(`exp+carri://invite?${queryStringWithId}`);
+                    deepLinkCandidates.push(`exp+carri://?${queryStringWithId}`);
+                    deepLinkCandidates.push(`exp+carri://open?${queryStringWithId}`);
+                    deepLinkCandidates.push(`exp+carri://open/invite?${queryStringWithId}`);
+                }
             }
 
             deepLinkCandidates.push('carri://');
@@ -485,7 +498,9 @@
                 const tryDeepLink = () => {
                     // Use the first (most likely) deep link candidate
                     const deepLink = deepLinkCandidates[0] || `carri://invite/${inviteId}`;
+                    console.log('Invite data:', inviteData);
                     console.log('Trying deep link:', deepLink);
+                    console.log('All deep link candidates:', deepLinkCandidates);
 
                     if (isIOS()) {
                         // On iOS, use iframe method to avoid Safari error dialog
@@ -573,22 +588,26 @@
         // Initialize the page
         window.addEventListener('load', function() {
             let inviteData = getInvitationData();
+            let isReturningFromStore = false;
             
             // If no invite data in URL, check if user is returning from app store
             if (!inviteData.id) {
                 const storedData = getStoredInviteData();
                 if (storedData && storedData.id) {
                     inviteData = storedData;
+                    isReturningFromStore = true;
                     // Show a message that we're using stored invite data
                     const messageDiv = document.getElementById('appMessage');
                     if (messageDiv) {
                         messageDiv.innerHTML = `
-                            📱 Welcome back! We found your invitation.<br><br>
-                            Click the button below to join the family.
+                            📱 Welcome back! Opening Carri with your invitation...
                         `;
                         messageDiv.style.display = 'block';
                     }
                 }
+            } else {
+                // Store invite data when first visiting with URL params
+                storeInviteData(inviteData);
             }
             
             const loadingEl = document.getElementById('loading');
@@ -619,11 +638,13 @@
                     openApp(inviteData);
                 });
                 
-                // Auto-try to open app on mobile after 1 second
+                // Auto-try to open app on mobile
                 if (isMobile()) {
+                    // If returning from store, try immediately; otherwise wait 1 second
+                    const delay = isReturningFromStore ? 500 : 1000;
                     setTimeout(() => {
                         openApp(inviteData);
-                    }, 1000);
+                    }, delay);
                 }
             } else {
                 loadingEl.innerHTML = 'Invalid invitation link. Please check the link and try again.';
