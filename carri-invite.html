@@ -457,6 +457,12 @@
                 };
                 window.addEventListener('blur', onBlur);
 
+                const onPageHide = () => {
+                    appOpened = true;
+                    console.log('App likely opened - page hidden');
+                };
+                window.addEventListener('pagehide', onPageHide);
+
                 // Try multiple methods to open the app
                 const tryDeepLink = (index = 0) => {
                     if (index >= deepLinkCandidates.length) {
@@ -525,11 +531,6 @@
                             }
                             messageDiv.style.display = 'block';
                         }
-
-                        // Redirect to the appropriate store automatically on mobile
-                        if (storeUrl) {
-                            window.location.href = storeUrl;
-                        }
                     }
                 }, fallbackTimeoutMs);
 
@@ -537,6 +538,7 @@
                 setTimeout(() => {
                     document.removeEventListener('visibilitychange', onVisibilityChange);
                     window.removeEventListener('blur', onBlur);
+                    window.removeEventListener('pagehide', onPageHide);
                 }, fallbackTimeoutMs + 1000);
 
             } else {
