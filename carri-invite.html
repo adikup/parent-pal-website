@@ -443,9 +443,6 @@
             console.log('📱 Opening app with deep link:', deepLink);
             console.log('📱 Invite data:', inviteData);
             
-            // Show alert with deep link details (only when returning from store)
-            alert('📱 Opening app with deep link:\n\n' + deepLink + '\n\nInvite data:\n' + JSON.stringify(inviteData, null, 2));
-            
             // Use iframe to avoid Safari error dialog
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
