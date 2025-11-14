@@ -377,11 +377,8 @@
                 console.log('✅ STORED invite data:', inviteData);
                 console.log('✅ Storage check - localStorage:', localStorage.getItem('carri_invite_data'));
                 console.log('✅ Storage check - sessionStorage:', sessionStorage.getItem('carri_invite_data'));
-                // Debug alert
-                alert('STORED invite data:\n' + JSON.stringify(inviteData, null, 2));
             } else {
                 console.log('❌ Cannot store - no invite ID:', inviteData);
-                alert('❌ Cannot store - no invite ID');
             }
         }
 
@@ -398,16 +395,13 @@
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     console.log('✅ RETRIEVED invite data:', parsed);
-                    alert('RETRIEVED invite data:\n' + JSON.stringify(parsed, null, 2));
                     return parsed;
                 } else {
                     console.log('❌ No stored data found');
-                    alert('❌ No stored data found');
                     return null;
                 }
             } catch (e) {
                 console.log('❌ Error retrieving stored data:', e);
-                alert('❌ Error retrieving stored data: ' + e.message);
                 return null;
             }
         }
@@ -428,7 +422,6 @@
         // Function to open app with invite params (used when app is installed)
         function openAppWithParams(inviteData) {
             console.log('🚀 openAppWithParams called with:', inviteData);
-            alert('🚀 openAppWithParams called\nInvite data: ' + JSON.stringify(inviteData, null, 2));
             
             // Build deep link with all parameters
             const inviteId = inviteData.id || '';
@@ -449,7 +442,9 @@
             
             console.log('📱 Opening app with deep link:', deepLink);
             console.log('📱 Invite data:', inviteData);
-            alert('📱 Opening app with deep link:\n' + deepLink + '\n\nInvite data:\n' + JSON.stringify(inviteData, null, 2));
+            
+            // Show alert with deep link details (only when returning from store)
+            alert('📱 Opening app with deep link:\n\n' + deepLink + '\n\nInvite data:\n' + JSON.stringify(inviteData, null, 2));
             
             // Use iframe to avoid Safari error dialog
             const iframe = document.createElement('iframe');
@@ -482,7 +477,6 @@
 
                 // ALWAYS store invite data first (critical for return from App Store)
                 console.log('💾 openApp: Storing invite data before redirect:', inviteData);
-                alert('💾 openApp: Storing invite data before redirect:\n' + JSON.stringify(inviteData, null, 2));
                 storeInviteData(inviteData);
                 console.log('✅ openApp: Stored invite data:', inviteData);
 
@@ -535,11 +529,9 @@
                         console.log('🛒 Redirecting to App Store');
                         console.log('🛒 App opened status:', appOpened);
                         console.log('🛒 Store URL:', storeUrl);
-                        alert('🛒 Redirecting to App Store\nApp opened: ' + appOpened + '\nStore URL: ' + storeUrl + '\n\nMake sure to return to this page after installing!');
                         window.location.href = storeUrl;
                     } else {
                         console.log('✅ App opened, not redirecting to store');
-                        alert('✅ App opened, not redirecting to store');
                     }
                 }, redirectTimeoutMs);
 
@@ -564,18 +556,15 @@
         // Initialize the page
         window.addEventListener('load', function() {
             console.log('🔵 PAGE LOADED');
-            alert('🔵 PAGE LOADED');
             
             let inviteData = getInvitationData();
             console.log('🔵 Initial invite data from URL:', inviteData);
-            alert('🔵 Initial invite data from URL:\n' + JSON.stringify(inviteData, null, 2));
             
             let isReturningFromStore = false;
             
             // If no invite data in URL, check if user is returning from app store
             if (!inviteData.id) {
                 console.log('🔵 No invite ID in URL, checking for stored data...');
-                alert('🔵 No invite ID in URL, checking for stored data...');
                 
                 const storedData = getStoredInviteData();
                 console.log('🔵 Stored data retrieved:', storedData);
@@ -584,7 +573,9 @@
                     inviteData = storedData;
                     isReturningFromStore = true;
                     console.log('✅ RETURNING FROM STORE - using stored data:', inviteData);
-                    alert('✅ RETURNING FROM STORE\nUsing stored data:\n' + JSON.stringify(inviteData, null, 2));
+                    
+                    // Debug alert when returning from store
+                    alert('✅ RETURNING FROM STORE\n\nRetrieved invite data:\n' + JSON.stringify(inviteData, null, 2));
                     
                     // Show a message that we're using stored invite data
                     const messageDiv = document.getElementById('appMessage');
@@ -596,11 +587,10 @@
                     }
                 } else {
                     console.log('❌ No stored data found, not returning from store');
-                    alert('❌ No stored data found, not returning from store');
+                    alert('❌ No stored data found\n\nThis means invite params were not saved.\nCheck console for details.');
                 }
             } else {
                 console.log('✅ First visit with URL params, storing data...');
-                alert('✅ First visit with URL params, storing data...');
                 // Store invite data when first visiting with URL params
                 storeInviteData(inviteData);
             }
@@ -636,21 +626,19 @@
                 // Auto-try to open app on mobile
                 if (isMobile()) {
                     console.log('📱 Mobile device detected, isReturningFromStore:', isReturningFromStore);
-                    alert('📱 Mobile device detected\nisReturningFromStore: ' + isReturningFromStore + '\ninviteData: ' + JSON.stringify(inviteData, null, 2));
+                    console.log('📱 Invite data:', inviteData);
                     
                     if (isReturningFromStore) {
                         // Returning from App Store - try to open app with stored invite params
                         console.log('✅ Returning from App Store, opening app with invite params');
-                        alert('✅ Returning from App Store\nWill open app with params in 500ms\ninviteData: ' + JSON.stringify(inviteData, null, 2));
+                        alert('🚀 About to open app with invite params:\n\n' + JSON.stringify(inviteData, null, 2));
                         setTimeout(() => {
                             console.log('⏰ Timeout fired, calling openAppWithParams');
-                            alert('⏰ Timeout fired, calling openAppWithParams');
                             openAppWithParams(inviteData);
                         }, 500);
                     } else {
                         // First visit - try app first, then redirect to store
                         console.log('🆕 First visit, will try app then redirect to store');
-                        alert('🆕 First visit\nWill try app then redirect to store in 1000ms');
                         setTimeout(() => {
                             console.log('⏰ Timeout fired, calling openApp');
                             openApp(inviteData);
